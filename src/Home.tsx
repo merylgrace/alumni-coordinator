@@ -9,14 +9,12 @@ import { supabase } from './supabaseClient';
 import { signOutWithLog } from './activityLog';
 import { DashboardCustomizeOutlined, Logout, TableChart } from '@mui/icons-material';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import Dashboard from './pages/Dashboard';
 import DataTables from './pages/DataTables';
 import CreateUser from './pages/CreateUser';
 import ActivityLogs from './pages/ActivityLogs';
 import UserProfileTable from './pages/UserProfileTable';
-import HistoryIcon from '@mui/icons-material/History';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import SchoolIcon from '@mui/icons-material/School';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import AlumniVerificationAdmin from './pages/AlumniVerificationAdmin';
 import DeletionRequestsAdmin from './pages/DeletionRequestsAdmin';
@@ -99,12 +97,12 @@ export default function HomeLayout() {
     { text: 'Dashboard', path: '/home/dashboard', icon: <DashboardCustomizeOutlined/> },
     { text: 'Data Tables', path: '/home/datatables', icon: <TableChart /> },
   { text: 'User Profiles', path: '/home/user-profile-table', icon: <PeopleAltIcon /> },
-    { text: 'Create User', path: '/home/create-user', icon: <PersonAddAlt1Icon /> },
-    { text: 'Activity Logs', path: '/home/activity-logs', icon: <HistoryIcon /> },
-    { text: 'Alumni Verification', path: '/home/alumni-verification', icon: <VerifiedUserIcon /> },
-    { text: 'Announcements', path: '/home/announcements', icon: <HistoryIcon /> },
-  { text: 'Announcement Panel', path: '/home/admin/announcements', icon: <CampaignIcon /> },
-    { text: 'Deletion Requests', path: '/home/deletion-requests', icon: <HistoryIcon /> },
+    // { text: 'Create User', path: '/home/create-user', icon: <PersonAddAlt1Icon /> },
+    // { text: 'Activity Logs', path: '/home/activity-logs', icon: <HistoryIcon /> },
+    { text: 'Alumni Verification', path: '/home/alumni-verification', icon: <SchoolIcon /> },
+    // { text: 'Announcements', path: '/home/announcements', icon: <HistoryIcon /> },
+    { text: 'Announcement Panel', path: '/home/admin/announcements', icon: <CampaignIcon /> },
+    // { text: 'Deletion Requests', path: '/home/deletion-requests', icon: <HistoryIcon /> },
   ];
 
   return (

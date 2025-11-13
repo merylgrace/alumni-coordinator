@@ -1,11 +1,41 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent, Typography, TextField, LinearProgress, Alert, Button, Stack } from '@mui/material';
+import { Card, CardContent, Typography, TextField, LinearProgress, Alert, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Box, FormControl, FormHelperText, InputLabel, MenuItem, Select, InputAdornment, IconButton } from '@mui/material';
 import { DataGrid, GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { supabase } from '../supabaseClient';
 
 // Table name constant (adjusted to actual table name)
+// Table name constant (adjusted to actual table name)
 const TABLE_NAME = 'user_profile_questions';
+
+const coursesList = [
+  'BSIT',
+  'BSEd - English',
+  'BSEd - Math',
+  'BEEd',
+  'BECEd',
+  'BSBA - Financial Management',
+  'BSBA - Marketing Management',
+  'BSBA - Operations Management',
+];
+
+const currentYear = new Date().getFullYear();
+
+type CreateUserFormState = {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  graduationYear: number | '';
+  course: string;
+  phoneNumber: string;
+};
+
+type CreateUserFormErrors = Partial<Record<keyof CreateUserFormState, string>>;
 
 export type UserProfileRow = {
   id: string;
@@ -83,6 +113,131 @@ export default function UserProfileTable() {
   const [rows, setRows] = useState<UserProfileRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Create User Modal state
+  const [openCreateUserModal, setOpenCreateUserModal] = useState(false);
+  const [createUserForm, setCreateUserForm] = useState<CreateUserFormState>({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    graduationYear: currentYear,
+    course: '',
+    phoneNumber: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [createUserErrors, setCreateUserErrors] = useState<CreateUserFormErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const isValidEmail = (e: string) => /\S+@\S+\.\S+/.test(e);
+
+  const validateCreateUserForm = (): boolean => {
+    const e: CreateUserFormErrors = {};
+    if (!createUserForm.firstName) e.firstName = 'First name is required';
+    if (!createUserForm.lastName) e.lastName = 'Last name is required';
+
+    if (!createUserForm.email) e.email = 'Email is required';
+    else if (!isValidEmail(createUserForm.email)) e.email = 'Invalid email address';
+
+    if (!createUserForm.password) e.password = 'Password is required';
+    else if (createUserForm.password.length < 6) e.password = 'Minimum 6 characters';
+
+    if (!createUserForm.confirmPassword) e.confirmPassword = 'Please confirm password';
+    else if (createUserForm.password !== createUserForm.confirmPassword) e.confirmPassword = 'Passwords do not match';
+
+    if (!createUserForm.course) e.course = 'Course is required';
+
+    if (createUserForm.graduationYear === '' || Number.isNaN(Number(createUserForm.graduationYear))) {
+      e.graduationYear = 'Graduation year is required';
+    } else if (Number(createUserForm.graduationYear) < 1980 || Number(createUserForm.graduationYear) > currentYear + 5) {
+      e.graduationYear = `Year must be between 1980 and ${currentYear + 5}`;
+    }
+
+    setCreateUserErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const onCreateUserChange = (name: keyof CreateUserFormState, value: any) => {
+    setCreateUserForm((prev) => ({ ...prev, [name]: value }));
+    if (createUserErrors[name]) setCreateUserErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const fullNameCreateUser = useMemo(
+    () => [createUserForm.firstName, createUserForm.lastName].filter(Boolean).join(' '),
+    [createUserForm.firstName, createUserForm.lastName]
+  );
+
+  const handleCreateUserSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    setSuccessMsg(null);
+    setErrorMsg(null);
+    if (!validateCreateUserForm()) return;
+
+    setSubmitting(true);
+    try {
+      // 1) Create the auth user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: createUserForm.email,
+        password: createUserForm.password,
+      });
+      if (signUpError || !signUpData.user) {
+        throw new Error(signUpError?.message || 'Failed to create auth user');
+      }
+      const newUser = signUpData.user;
+
+      // 2) Insert/update the profile row
+      const profile = {
+        id: newUser.id,
+        first_name: createUserForm.firstName,
+        last_name: createUserForm.lastName,
+        full_name: fullNameCreateUser || null,
+        graduation_year: Number(createUserForm.graduationYear),
+        course: createUserForm.course,
+        phone_number: createUserForm.phoneNumber || null,
+        role: 'alumni' as const,
+        email: createUserForm.email.toLowerCase(),
+      };
+
+      const { error: upsertError } = await supabase
+        .from('profiles')
+        .upsert(profile, { onConflict: 'id' });
+
+      if (upsertError) {
+        if (/duplicate key/i.test(upsertError.message) || (upsertError as any)?.code === '23505') {
+          setSuccessMsg(`User ${fullNameCreateUser || createUserForm.email} already exists. Profile kept/updated.`);
+        } else {
+          throw new Error(upsertError.message);
+        }
+      } else {
+        setSuccessMsg(`User ${fullNameCreateUser || createUserForm.email} was created successfully.`);
+      }
+
+      setCreateUserForm({
+        email: '', password: '', confirmPassword: '', firstName: '', lastName: '',
+        graduationYear: currentYear, course: '', phoneNumber: '',
+      });
+
+      // Reload user profiles after creation
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to create user';
+      setErrorMsg(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCloseCreateUserModal = () => {
+    setOpenCreateUserModal(false);
+    setSuccessMsg(null);
+    setErrorMsg(null);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -208,6 +363,9 @@ export default function UserProfileTable() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          <Button variant="contained" color="success" startIcon={<PersonAddAlt1Icon />} onClick={() => setOpenCreateUserModal(true)}>
+            Create User
+          </Button>
           <Button variant="contained" color="primary" startIcon={<FileDownloadIcon />} onClick={handleExportCsv}>
             download CSV
           </Button>
@@ -233,6 +391,137 @@ export default function UserProfileTable() {
             pageSizeOptions={[5, 10, 25, 50]}
           />
         </div>
+
+        {/* Create User Modal */}
+        <Dialog open={openCreateUserModal} onClose={handleCloseCreateUserModal} maxWidth="sm" fullWidth>
+          <DialogTitle>Create User Account</DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            {errorMsg && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg(null)}>
+                {errorMsg}
+              </Alert>
+            )}
+            {successMsg && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {successMsg}
+              </Alert>
+            )}
+            <Box component="form" noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="First Name"
+                value={createUserForm.firstName}
+                onChange={(e) => onCreateUserChange('firstName', e.target.value)}
+                error={Boolean(createUserErrors.firstName)}
+                helperText={createUserErrors.firstName}
+                required
+                size="small"
+              />
+              <TextField
+                fullWidth
+                label="Last Name"
+                value={createUserForm.lastName}
+                onChange={(e) => onCreateUserChange('lastName', e.target.value)}
+                error={Boolean(createUserErrors.lastName)}
+                helperText={createUserErrors.lastName}
+                required
+                size="small"
+              />
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={createUserForm.email}
+                onChange={(e) => onCreateUserChange('email', e.target.value)}
+                error={Boolean(createUserErrors.email)}
+                helperText={createUserErrors.email}
+                required
+                size="small"
+              />
+              <TextField
+                fullWidth
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                value={createUserForm.password}
+                onChange={(e) => onCreateUserChange('password', e.target.value)}
+                error={Boolean(createUserErrors.password)}
+                helperText={createUserErrors.password}
+                required
+                size="small"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword((s) => !s)} edge="end" size="small">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                type={showConfirm ? 'text' : 'password'}
+                value={createUserForm.confirmPassword}
+                onChange={(e) => onCreateUserChange('confirmPassword', e.target.value)}
+                error={Boolean(createUserErrors.confirmPassword)}
+                helperText={createUserErrors.confirmPassword}
+                required
+                size="small"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowConfirm((s) => !s)} edge="end" size="small">
+                        {showConfirm ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+              <FormControl fullWidth size="small" error={Boolean(createUserErrors.course)}>
+                <InputLabel id="course-label">Course/Program</InputLabel>
+                <Select
+                  labelId="course-label"
+                  label="Course/Program"
+                  value={createUserForm.course}
+                  onChange={(e) => onCreateUserChange('course', e.target.value)}
+                  required
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {coursesList.map((c) => (
+                    <MenuItem key={c} value={c}>{c}</MenuItem>
+                  ))}
+                </Select>
+                {createUserErrors.course && <FormHelperText>{createUserErrors.course}</FormHelperText>}
+              </FormControl>
+              <TextField
+                fullWidth
+                label="Year Graduated"
+                type="number"
+                value={createUserForm.graduationYear}
+                onChange={(e) => onCreateUserChange('graduationYear', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                inputProps={{ min: 1980, max: currentYear + 5 }}
+                error={Boolean(createUserErrors.graduationYear)}
+                helperText={createUserErrors.graduationYear as any}
+                required
+                size="small"
+              />
+              <TextField
+                fullWidth
+                label="Phone Number (optional)"
+                value={createUserForm.phoneNumber}
+                onChange={(e) => onCreateUserChange('phoneNumber', e.target.value)}
+                size="small"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCreateUserModal} disabled={submitting}>Cancel</Button>
+            <Button onClick={handleCreateUserSubmit} variant="contained" disabled={submitting}>
+              {submitting ? 'Creating…' : 'Create Account'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </CardContent>
     </Card>
   );
