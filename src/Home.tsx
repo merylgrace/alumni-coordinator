@@ -11,16 +11,11 @@ import { DashboardCustomizeOutlined, Logout, TableChart } from '@mui/icons-mater
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import Dashboard from './pages/Dashboard';
 import DataTables from './pages/DataTables';
-import CreateUser from './pages/CreateUser';
-import ActivityLogs from './pages/ActivityLogs';
 import UserProfileTable from './pages/UserProfileTable';
 import SchoolIcon from '@mui/icons-material/School';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import AlumniVerificationAdmin from './pages/AlumniVerificationAdmin';
-import DeletionRequestsAdmin from './pages/DeletionRequestsAdmin';
 import AnnouncementsAdmin from './pages/AnnouncementsAdmin';
-import Announcements from './pages/Announcements';
-import AnnouncementDetail from './pages/AnnouncementDetail';
 
 
 const drawerWidth = 240;
@@ -192,15 +187,9 @@ export default function HomeLayout() {
         <Routes>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/datatables" element={<DataTables />} />
-          <Route path="/create-user" element={<CreateUser />} />
           <Route path="/user-profile-table" element={<UserProfileTable />} />
-          <Route path="/activity-logs" element={<ActivityLogs />} />
           <Route path="/alumni-verification" element={<AlumniVerificationAdmin />} />
-          <Route path="/announcements" element={<Announcements />} />
-          <Route path="/announcements/:id" element={<AnnouncementDetail />} />
           <Route path="/admin/announcements" element={<AnnouncementsAdmin />} />
-          <Route path="/deletion-requests" element={<DeletionRequestsAdmin />} />
-          {/* <Route path="/datacharts" element={<DataCharts />} /> */}
           <Route path="/" element={<Navigate to="/home/dashboard" replace />} />
         </Routes>
       </Main>
