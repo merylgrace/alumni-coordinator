@@ -3,7 +3,8 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base:"/beacon-test",
+  // Use root base by default; if you need a subpath, set VITE_BASE_PATH in environment and use that during build
+  base: '/',
   server: {
     port: 3000,
   },
