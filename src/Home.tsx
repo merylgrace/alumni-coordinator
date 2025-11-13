@@ -28,6 +28,9 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{ 
     duration: theme.transitions.duration.leavingScreen,
   }),
   marginLeft: open ? 0 : `-${drawerWidth}px`,
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
 }));
 
 interface AppBarProps extends MuiAppBarProps {

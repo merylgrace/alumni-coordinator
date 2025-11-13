@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent, Typography, TextField, LinearProgress, Alert, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Box, FormControl, FormHelperText, InputLabel, MenuItem, Select, InputAdornment, IconButton } from '@mui/material';
+import { Typography, TextField, LinearProgress, Alert, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Box, FormControl, FormHelperText, InputLabel, MenuItem, Select, InputAdornment, IconButton } from '@mui/material';
 import { DataGrid, GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
@@ -348,13 +348,13 @@ export default function UserProfileTable() {
   };
 
   return (
-    <Card sx={{ width: '100%' }}>
-      <CardContent>
-        <Typography variant="h5" gutterBottom>
+    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <Box sx={{ flexShrink: 0, pb: 2 }}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
           User Profile Data
         </Typography>
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} mb={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} mb={0}>
           <TextField
             fullWidth
             variant="outlined"
@@ -370,8 +370,10 @@ export default function UserProfileTable() {
             download CSV
           </Button>
         </Stack>
+      </Box>
 
-        <div style={{ height: 520, width: '100%' }}>
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2, minHeight: 0 }}>
+        <div style={{ width: '100%', height: '100%' }}>
           {loading && <LinearProgress />}
           {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
           {!loading && !error && filteredRows.length === 0 && (
@@ -391,9 +393,10 @@ export default function UserProfileTable() {
             pageSizeOptions={[5, 10, 25, 50]}
           />
         </div>
+      </Box>
 
-        {/* Create User Modal */}
-        <Dialog open={openCreateUserModal} onClose={handleCloseCreateUserModal} maxWidth="sm" fullWidth>
+      {/* Create User Modal */}
+      <Dialog open={openCreateUserModal} onClose={handleCloseCreateUserModal} maxWidth="sm" fullWidth>
           <DialogTitle>Create User Account</DialogTitle>
           <DialogContent sx={{ pt: 2 }}>
             {errorMsg && (
@@ -522,7 +525,6 @@ export default function UserProfileTable() {
             </Button>
           </DialogActions>
         </Dialog>
-      </CardContent>
-    </Card>
+    </Box>
   );
 }
