@@ -1,9 +1,9 @@
 {
-  "name": "my-vite-app",
+  "name": "alumni-tracer-admin",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://cliffamadeus.github.io/beacon-test",
+  "homepage": "https://alumni-coordinator.vercel.app/",
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
