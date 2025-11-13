@@ -156,7 +156,7 @@ const Login: React.FC = () => {
               </MuiLink>
 
               <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                For admin use only
+                For Alumni Coordinator use only
               </Typography>
             </Stack>
           </Box>
