@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Avatar,
   Box,
   Button,
   Checkbox,
@@ -16,7 +15,6 @@ import {
 } from '@mui/material';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useNavigate } from 'react-router-dom';
@@ -68,16 +66,20 @@ const Login: React.FC = () => {
     <Container maxWidth="sm" sx={{ mt: 8 }}>
       <Paper elevation={6} sx={{ p: 4, borderRadius: 3 }}>
         <Stack spacing={3} alignItems="center">
-          <Avatar sx={{ width: 72, height: 72, bgcolor: 'transparent' }}>
-            <AdminPanelSettingsIcon sx={{ fontSize: 40 }} />
-          </Avatar>
+          <Box sx={{ width: '100%', textAlign: 'center', mb: 1 }}>
+            <img 
+              src="https://alumnitracers.vercel.app/logo.jpeg" 
+              alt="Alumni Tracer Logo" 
+              style={{ maxWidth: '120px', height: 'auto', borderRadius: '8px' }}
+            />
+          </Box>
 
           <Box textAlign="center">
             <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
               Welcome Back
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Sign in to access the admin dashboard
+              Sign in to access the Alumni Coordinator Dashboard
             </Typography>
           </Box>
 
