@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Typography, TextField, LinearProgress, Alert, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Box, FormControl, FormHelperText, InputLabel, MenuItem, Select, InputAdornment, IconButton } from '@mui/material';
 import { DataGrid, GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { supabase } from '../supabaseClient';
@@ -363,9 +362,6 @@ export default function UserProfileTable() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Button variant="contained" color="success" startIcon={<PersonAddAlt1Icon />} onClick={() => setOpenCreateUserModal(true)}>
-            Create User
-          </Button>
           <Button variant="contained" color="primary" startIcon={<FileDownloadIcon />} onClick={handleExportCsv}>
             download CSV
           </Button>
