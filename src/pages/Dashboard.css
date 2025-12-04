@@ -9,3 +9,115 @@
     justify-content: center;
     box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.3);
   }
+
+/* Reports-style Summary Cards */
+.dashboard-card-purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+}
+
+.dashboard-card-pink {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  box-shadow: 0 4px 20px rgba(245, 87, 108, 0.15);
+}
+
+.dashboard-card-blue {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  box-shadow: 0 4px 20px rgba(79, 172, 254, 0.15);
+}
+
+.dashboard-card-green {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  box-shadow: 0 4px 20px rgba(86, 171, 47, 0.15);
+}
+
+.dashboard-card-content {
+  display: flex;
+  align-items: center;
+  color: white;
+  gap: 16px;
+}
+
+.dashboard-card-icon {
+  font-size: 40px;
+}
+
+.dashboard-card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashboard-card-value {
+  font-weight: bold;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.dashboard-card-label {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.dashboard-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+/* Button Styling */
+.dashboard-download-btn {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.dashboard-download-btn:hover {
+  background-color: #1565c0;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.dashboard-download-btn:active {
+  transform: scale(0.98);
+}
+
+/* Chart & Loading containers (shared with Reports) */
+.dashboard-chart-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.dashboard-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  min-height: 300px;
+}

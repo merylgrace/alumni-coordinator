@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Grid, 
   Card, 
@@ -11,7 +11,9 @@ import {
   Select, 
   MenuItem,
   SelectChangeEvent,
-  LinearProgress
+  LinearProgress,
+  Button,
+  Box
 } from '@mui/material';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -22,8 +24,13 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import L from 'leaflet';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import PeopleIcon from '@mui/icons-material/People';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import MarkerClusterGroup from 'react-leaflet-markercluster';
 import './Dashboard.css';
+import './Reports.css';
 import { supabase } from '../supabaseClient';
 // Fix for default marker icons in React-Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -94,7 +101,9 @@ interface AlumniData {
 interface StatCardProps {
   title: string;
   value: number | string;
-  color: 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success';
+  color?: 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success';
+  className?: string;
+  icon?: React.ReactNode;
 }
 
 // Reset View Component
@@ -127,25 +136,38 @@ function ResetViewControl({ center, zoom }: { center: [number, number]; zoom: nu
 }
 
 // Stat Card Component
-const StatCard = ({ title, value, color }: StatCardProps) => {
+const StatCard = ({ title, value, color, className, icon }: StatCardProps) => {
   const theme = useTheme();
+
+  if (className) {
+    return (
+      <Card className={className}>
+        <CardContent>
+          <Box className="report-card-content">
+            {/** optional icon on left */}
+            {icon ? <Box className="report-card-icon">{icon}</Box> : null}
+            <Box className="report-card-stats">
+              <Typography className="report-card-value">{value}</Typography>
+              <Typography className="report-card-label">{title}</Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card
       sx={{
         minHeight: 120,
-        backgroundColor: theme.palette[color].main,
-        color: theme.palette[color].contrastText,
+        backgroundColor: color ? theme.palette[color].main : undefined,
+        color: color ? theme.palette[color].contrastText : undefined,
         boxShadow: 3,
       }}
     >
       <CardContent>
-        <Typography variant="subtitle1">
-          {title}
-        </Typography>
-        <Typography variant="h5" fontWeight="bold">
-          {value}
-        </Typography>
+        <Typography variant="subtitle1">{title}</Typography>
+        <Typography variant="h5" fontWeight="bold">{value}</Typography>
       </CardContent>
     </Card>
   );
@@ -160,6 +182,103 @@ const Dashboard = () => {
   const mapCenter: [number, number] = [12.988438,121.785126];
   const initialZoom = 5;
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const downloadEmploymentRatePerBatch = async () => {
+    try {
+      // First get all alumni with their graduation years and IDs
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, graduation_year, role')
+        .eq('role', 'alumni');
+
+      if (profilesError) throw profilesError;
+
+      // Then get employment records for those alumni using profile IDs
+      const profileIds = profilesData?.map((p) => p.id).filter(Boolean) || [];
+      if (profileIds.length === 0) {
+        alert('No alumni found');
+        return;
+      }
+
+      const { data: employmentData, error: employmentError } = await supabase
+        .from('user_profile_questions')
+        .select('user_id, employment_status')
+        .in('user_id', profileIds);
+
+      if (employmentError) throw employmentError;
+
+      // Create a map of profile ID (user_id) to employment status
+      const employmentMap: { [key: string]: string } = {};
+      employmentData?.forEach((record) => {
+        if (record.user_id && record.employment_status) {
+          employmentMap[record.user_id] = record.employment_status.toLowerCase();
+        }
+      });
+
+      // Helper function to determine if employed
+      const isEmployed = (statusStr: string): boolean => {
+        if (!statusStr) return false;
+        const s = statusStr.toLowerCase().trim();
+        if (/^(self[-\s]?employed|employed)$/.test(s)) return true;
+        if (/(^|\b)(freelance|entrepreneur|business owner|working|full[-\s]?time|part[-\s]?time)(\b|$)/.test(s) && !/unemployed|not\s*employed|jobless|none/.test(s)) return true;
+        return false;
+      };
+
+      const isUnemployed = (statusStr: string): boolean => {
+        if (!statusStr) return false;
+        const s = statusStr.toLowerCase().trim();
+        return /unemployed|not\s*employed|jobless|none/.test(s);
+      };
+
+      // Group by graduation year and calculate employment stats
+      const batchStats: { [year: string]: { employed: number; unemployed: number; total: number } } = {};
+
+      profilesData?.forEach((profile) => {
+        if (!profile.graduation_year) return;
+        const year = profile.graduation_year.toString();
+
+        if (!batchStats[year]) {
+          batchStats[year] = { employed: 0, unemployed: 0, total: 0 };
+        }
+
+        batchStats[year].total += 1;
+
+        const employmentStatus = employmentMap[profile.id];
+        if (employmentStatus && isEmployed(employmentStatus)) {
+          batchStats[year].employed += 1;
+        } else if (employmentStatus && isUnemployed(employmentStatus)) {
+          batchStats[year].unemployed += 1;
+        }
+      });
+
+      // Convert to CSV format
+      const rows = [
+        ['Batch (Graduation Year)', 'Total Alumni', 'Employed', 'Unemployed', 'Employment Rate (%)'],
+        ...Object.entries(batchStats)
+          .sort((a, b) => parseInt(b[0]) - parseInt(a[0]))
+          .map(([year, stats]) => {
+            const employmentRate = stats.total > 0 ? ((stats.employed / stats.total) * 100).toFixed(2) : '0.00';
+            return [year, stats.total, stats.employed, stats.unemployed, employmentRate];
+          }),
+      ];
+
+      const csv = rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `employment_rate_per_batch_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading employment rate report:', error);
+      alert('Error downloading report. Check console for details.');
+    }
+  };
 
   useEffect(() => {
 
@@ -442,10 +561,13 @@ const Dashboard = () => {
   };
 
   return (
-    <div>
-      <Typography variant="h4" gutterBottom>
-        Alumni Dashboard
-      </Typography>
+    <Box sx={{ p: 3 }}>
+      <Box className="report-header">
+        <Typography className="report-title">Alumni Dashboard</Typography>
+        <Button className="report-download-btn" startIcon={<FileDownloadIcon />} onClick={downloadEmploymentRatePerBatch}>
+          Download Employment Report
+        </Button>
+      </Box>
 
       <Grid container spacing={3}>
         {loadError && (
@@ -458,15 +580,21 @@ const Dashboard = () => {
             <LinearProgress />
           </Grid>
         )}
-        {stats.map((stat) => (
+        {stats.map((stat, idx) => (
           <Grid item key={stat.title} xs={12} sm={6} md={3}>
-            <StatCard title={stat.title} value={stat.value} color={stat.color} />
+            <StatCard
+              title={stat.title}
+              value={stat.value}
+              color={stat.color}
+              className={idx === 0 ? 'report-card-purple' : idx === 1 ? 'report-card-pink' : idx === 2 ? 'report-card-blue' : 'report-card-purple'}
+              icon={idx === 0 ? <CalendarTodayIcon /> : idx === 1 ? <TrendingUpIcon /> : idx === 2 ? <PeopleIcon /> : <PeopleIcon />}
+            />
           </Grid>
         ))}
         
         <Grid container spacing={3} style={{marginTop:'1rem'}}>
           <Grid item xs={12} md={4}>
-            <Card sx={{ height: 500 }}>
+            <Card className="report-chart-container" sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%' }}>
                 <Typography variant="h6" gutterBottom>
                   Alumni Activity Over Time
@@ -494,7 +622,7 @@ const Dashboard = () => {
           </Grid>
 
           <Grid item xs={12} md={8}>
-            <Card sx={{ height: 'auto' }}>
+            <Card className="report-chart-container" sx={{ height: 'auto' }}>
               <CardContent>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="h6" gutterBottom>
@@ -554,7 +682,7 @@ const Dashboard = () => {
           </Grid>
         </Grid>
       </Grid>
-    </div>
+    </Box>
   );
 };
 

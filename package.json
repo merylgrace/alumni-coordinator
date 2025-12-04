@@ -1,9 +1,9 @@
 {
-  "name": "alumni-tracer-admin",
+  "name": "my-vite-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://alumni-coordinator.vercel.app/",
+  "homepage": "https://cliffamadeus.github.io/beacon-test",
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
@@ -26,7 +26,7 @@
     "react-leaflet": "^5.0.0",
     "react-leaflet-markercluster": "^5.0.0-rc.0",
     "react-router-dom": "^7.2.0",
-    "recharts": "^2.15.3"
+    "recharts": "^2.15.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

@@ -7,7 +7,6 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { supabase } from '../supabaseClient';
 
 // Table name constant (adjusted to actual table name)
-// Table name constant (adjusted to actual table name)
 const TABLE_NAME = 'user_profile_questions';
 
 const coursesList = [

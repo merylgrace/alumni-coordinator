@@ -1,0 +1,124 @@
+/* Reports Page Styling */
+
+/* Summary Cards */
+.report-card-purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15) !important;
+}
+
+.report-card-pink {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 20px rgba(245, 87, 108, 0.15) !important;
+}
+
+.report-card-blue {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 20px rgba(79, 172, 254, 0.15) !important;
+}
+
+.report-card-content {
+  display: flex;
+  align-items: center;
+  color: white;
+  gap: 16px;
+}
+
+.report-card-icon {
+  font-size: 48px; /* bigger */
+  font-weight: bold;
+}
+
+.report-card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-card-value {
+  font-weight: 800; /* bolder */
+  font-size: 32px; /* bigger */
+  line-height: 1.2;
+}
+
+.report-card-label {
+  font-size: 14px; /* slightly bigger */
+  font-weight: 600; /* bolder */
+  opacity: 0.95;
+}
+
+/* Filter Paper */
+.report-filter-panel {
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Chart Containers */
+.report-chart-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.report-chart-title {
+  font-size: 20px; /* bigger */
+  font-weight: 700; /* bolder */
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+/* Loading State */
+.report-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  min-height: 300px;
+}
+
+/* Header */
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.report-title {
+  font-size: 34px; /* bigger */
+  font-weight: 800; /* bolder */
+  color: #1a1a1a;
+  margin: 0;
+}
+
+/* Button Styling */
+.report-download-btn {
+  background-color: #1e88e5; /* brighter blue */
+  color: white;
+  border: none;
+  padding: 12px 26px; /* bigger */
+  border-radius: 8px; /* smoother */
+  font-weight: 700; /* bolder */
+  font-size: 16px; /* bigger text */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.report-download-btn:hover {
+  background-color: #1976d2;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.report-download-btn:active {
+  transform: scale(0.97);
+}
