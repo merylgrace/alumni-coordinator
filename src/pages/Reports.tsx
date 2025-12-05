@@ -12,6 +12,7 @@ import {
   Paper,
   CircularProgress,
   Button,
+  Stack,
 } from '@mui/material';
 import {
   BarChart,
@@ -395,18 +396,14 @@ const Reports: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box className="report-header">
-        <Typography className="report-title">
-          Alumni Registration Reports
-        </Typography>
-        <Button
-          className="report-download-btn"
-          startIcon={<FileDownloadIcon />}
-          onClick={downloadFilteredRegistrations}
-        >
-          Download Registration Data
-        </Button>
-      </Box>
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} mb={2}>
+        <Typography variant="h5" fontWeight={700}>Alumni Registration Reports</Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button variant="contained" color="primary" startIcon={<FileDownloadIcon />} onClick={downloadFilteredRegistrations}>
+            Download Registration Data
+          </Button>
+        </Stack>
+      </Stack>
 
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 3 }}>

@@ -151,9 +151,19 @@ const DataTables = () => {
   return (
     <Card sx={{ width: '100%' }}>
       <CardContent>
-        <Typography variant="h5" gutterBottom>
-          User Records
-        </Typography>
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} mb={2}>
+          <Typography variant="h5" fontWeight={700}>User Records</Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<FileDownloadIcon />}
+              onClick={handleExportCsv}
+            >
+              download alumni data (CSV)
+            </Button>
+          </Stack>
+        </Stack>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} mb={2}>
           <TextField
@@ -164,14 +174,6 @@ const DataTables = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<FileDownloadIcon />}
-            onClick={handleExportCsv}
-          >
-            download alumni data (CSV)
-          </Button>
         </Stack>
 
         <div style={{ height: 500, width: '100%' }}>

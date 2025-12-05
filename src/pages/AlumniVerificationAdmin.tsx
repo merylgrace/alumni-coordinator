@@ -1,11 +1,12 @@
 import React from 'react'
 import {
   Card, CardContent, Typography, Stack, TextField, LinearProgress, Alert,
-  Table, TableHead, TableRow, TableCell, TableBody, Chip, IconButton, Tooltip, Button
+  Table, TableHead, TableRow, TableCell, TableBody, Chip, IconButton, Tooltip, Button, TableContainer
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { supabase } from '../supabaseClient'
 import { logActivity } from '../activityLog'
+import './Reports.css'
 
 type Row = {
   id: string
@@ -94,8 +95,8 @@ export default function AlumniVerificationAdmin() {
   })
 
   return (
-    <Card>
-      <CardContent>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} mb={2}>
           <Typography variant="h5" fontWeight={700}>Alumni Verification</Typography>
           <Stack direction="row" spacing={1} alignItems="center">
@@ -117,55 +118,56 @@ export default function AlumniVerificationAdmin() {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         {loading && <LinearProgress sx={{ mb: 1 }} />}
 
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Course</TableCell>
-              <TableCell>Year Graduated</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Verified At</TableCell>
-              <TableCell align="right">Action</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filtered.map(r => {
-              const name = `${r.last_name || ''}, ${r.first_name || ''}`.trim().replace(/^,|,$/g, '')
-              const isVerified = !!r.is_verified
-              return (
-                <TableRow key={r.id} hover>
-                  <TableCell>{name || '—'}</TableCell>
-                  <TableCell>{r.course || '—'}</TableCell>
-                  <TableCell>{r.graduation_year ?? '—'}</TableCell>
-                  <TableCell>
-                    {isVerified
-                      ? <Chip size="small" color="success" label="Verified" />
-                      : <Chip size="small" color="warning" label="Pending" />}
-                  </TableCell>
-                  <TableCell>{fmtDate(r.verified_at)}</TableCell>
-                  <TableCell align="right">
-                    <Button
-                      size="small"
-                      variant={isVerified ? 'outlined' : 'contained'}
-                      color={isVerified ? 'warning' : 'success'}
-                      onClick={() => toggleVerify(r)}
-                      disabled={savingId === r.id}
-                    >
-                      {isVerified ? 'Mark Pending' : 'Mark Verified'}
-                    </Button>
+        <TableContainer sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Course</TableCell>
+                <TableCell>Year Graduated</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Verified At</TableCell>
+                <TableCell align="right">Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filtered.map(r => {
+                const name = `${r.last_name || ''}, ${r.first_name || ''}`.trim().replace(/^,|,$/g, '')
+                const isVerified = !!r.is_verified
+                return (
+                  <TableRow key={r.id} hover>
+                    <TableCell>{name || '—'}</TableCell>
+                    <TableCell>{r.course || '—'}</TableCell>
+                    <TableCell>{r.graduation_year ?? '—'}</TableCell>
+                    <TableCell>
+                      {isVerified
+                        ? <Chip size="small" color="success" label="Verified" />
+                        : <Chip size="small" color="warning" label="Pending" />}
+                    </TableCell>
+                    <TableCell>{fmtDate(r.verified_at)}</TableCell>
+                    <TableCell align="right">
+                      <Button
+                        size="small"
+                        className={isVerified ? 'gradient-btn-blue' : 'gradient-btn-pink'}
+                        onClick={() => toggleVerify(r)}
+                        disabled={savingId === r.id}
+                      >
+                        {isVerified ? 'Mark Pending' : 'Mark Verified'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+              {filtered.length === 0 && !loading && (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    No records.
                   </TableCell>
                 </TableRow>
-              )
-            })}
-            {filtered.length === 0 && !loading && (
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                  No records.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </CardContent>
     </Card>
   )

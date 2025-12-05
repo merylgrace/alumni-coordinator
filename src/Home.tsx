@@ -26,6 +26,8 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{ 
   display: 'flex',
   flexDirection: 'column',
   minHeight: 0,
+  overflow: 'hidden',
+  boxSizing: 'border-box',
   padding: theme.spacing(3),
   transition: theme.transitions.create('margin', {
     easing: theme.transitions.easing.sharp,
@@ -80,7 +82,7 @@ export default function HomeLayout() {
   ];
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <CssBaseline />
       <AppBar position="fixed" open={open}>
         <Toolbar>

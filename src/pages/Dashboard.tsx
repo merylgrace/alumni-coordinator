@@ -13,7 +13,8 @@ import {
   SelectChangeEvent,
   LinearProgress,
   Button,
-  Box
+  Box,
+  Stack,
 } from '@mui/material';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -562,12 +563,14 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box className="report-header">
-        <Typography className="report-title">Alumni Dashboard</Typography>
-        <Button className="report-download-btn" startIcon={<FileDownloadIcon />} onClick={downloadEmploymentRatePerBatch}>
-          Download Employment Report
-        </Button>
-      </Box>
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} mb={2}>
+        <Typography variant="h5" fontWeight={700}>Alumni Dashboard</Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button variant="contained" color="primary" startIcon={<FileDownloadIcon />} onClick={downloadEmploymentRatePerBatch}>
+            Download Employment Report
+          </Button>
+        </Stack>
+      </Stack>
 
       <Grid container spacing={3}>
         {loadError && (

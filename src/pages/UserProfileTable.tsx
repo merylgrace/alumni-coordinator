@@ -348,9 +348,14 @@ export default function UserProfileTable() {
   return (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={{ flexShrink: 0, pb: 2 }}>
-        <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-          User Profile Data
-        </Typography>
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} mb={2}>
+          <Typography variant="h5" fontWeight={700}>User Profile Data</Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button variant="contained" color="primary" startIcon={<FileDownloadIcon />} onClick={handleExportCsv}>
+              download CSV
+            </Button>
+          </Stack>
+        </Stack>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} mb={0}>
           <TextField
@@ -361,9 +366,6 @@ export default function UserProfileTable() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Button variant="contained" color="primary" startIcon={<FileDownloadIcon />} onClick={handleExportCsv}>
-            download CSV
-          </Button>
         </Stack>
       </Box>
 

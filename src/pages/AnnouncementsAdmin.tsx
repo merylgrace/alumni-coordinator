@@ -156,9 +156,9 @@ export default function AnnouncementsAdmin() {
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="h5" fontWeight={700}>Announcement Panel</Typography>
           <Stack direction="row" spacing={1}>
-            <Button onClick={load} startIcon={<RefreshIcon />} disabled={loading}>Reload</Button>
-            <Button onClick={openCreate} variant="contained" startIcon={<AddIcon />}>New</Button>
-          </Stack>
+              <Button variant="outlined" color="primary" onClick={load} startIcon={<RefreshIcon />} disabled={loading}>Reload</Button>
+              <Button onClick={openCreate} variant="contained" color="primary" startIcon={<AddIcon />}>New</Button>
+            </Stack>
         </Stack>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} mb={2}>
