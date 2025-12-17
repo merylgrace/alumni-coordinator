@@ -19,6 +19,91 @@ type Row = {
   verified_by: string | null
 }
 
+type CsvAlumniRecord = {
+  fullName: string
+  year: number
+}
+
+function normalizeNameParts(firstOrFull?: string | null, last?: string | null) {
+  const f = (firstOrFull || '').trim().toLowerCase()
+  const l = (last || '').trim().toLowerCase()
+  const joined = [f, l].filter(Boolean).join(' ')
+  return joined.replace(/\s+/g, ' ')
+}
+
+function parseVerificationCsv(text: string): CsvAlumniRecord[] {
+  const lines = text
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+
+  if (lines.length < 2) return []
+
+  const headerLine = lines[0]
+  let delimiter = ','
+  if (headerLine.includes(';') && !headerLine.includes(',')) delimiter = ';'
+  else if (headerLine.includes('\t') && !headerLine.includes(',')) delimiter = '\t'
+
+  const splitLine = (line: string) =>
+    line
+      .split(delimiter)
+      .map(p => p.trim().replace(/^"|"$/g, ''))
+
+  const headers = splitLine(headerLine).map(h => h.toLowerCase())
+
+  const findIndex = (candidates: string[]) =>
+    headers.findIndex(h => candidates.includes(h))
+
+  const idxFirst = findIndex(['first name', 'first_name', 'firstname', 'given name', 'given_name'])
+  const idxLast = findIndex(['last name', 'last_name', 'lastname', 'surname', 'family name', 'family_name'])
+  const idxFull = findIndex(['full name', 'fullname', 'full_name', 'name', 'display_full_name'])
+  const idxYear = findIndex([
+    'year graduated',
+    'year_graduated',
+    'yeargraduated',
+    'graduation_year',
+    'year of graduation',
+    'yearofgraduation',
+    'grad year',
+    'grad_year',
+    'batch',
+    'batch year',
+    'batch_year',
+    'year',
+  ])
+
+  if (idxYear === -1) return []
+  if (idxFull === -1 && (idxFirst === -1 || idxLast === -1)) return []
+
+  const candidateIdxs = [idxYear, idxFull, idxFirst, idxLast].filter(i => i >= 0)
+  const maxIdx = Math.max(...candidateIdxs)
+  const records: CsvAlumniRecord[] = []
+
+  for (let i = 1; i < lines.length; i++) {
+    const parts = splitLine(lines[i])
+    if (parts.length <= maxIdx) continue
+
+    const yearStr = parts[idxYear]?.trim()
+    const year = parseInt(yearStr, 10)
+
+    let fullName = ''
+    if (idxFull !== -1) {
+      fullName = parts[idxFull]?.trim() || ''
+    }
+    if (!fullName && idxFirst !== -1 && idxLast !== -1) {
+      const first = parts[idxFirst]?.trim() || ''
+      const last = parts[idxLast]?.trim() || ''
+      fullName = `${first} ${last}`.trim()
+    }
+
+    if (!fullName || !Number.isFinite(year)) continue
+
+    records.push({ fullName, year })
+  }
+
+  return records
+}
+
 function fmtDate(d?: string | null) {
   if (!d) return '—'
   try { return new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) } catch { return d || '—' }
@@ -30,6 +115,8 @@ export default function AlumniVerificationAdmin() {
   const [error, setError] = React.useState<string | null>(null)
   const [search, setSearch] = React.useState('')
   const [savingId, setSavingId] = React.useState<string | null>(null)
+  const [csvProcessing, setCsvProcessing] = React.useState(false)
+  const [csvMessage, setCsvMessage] = React.useState<string | null>(null)
 
   const load = React.useCallback(async () => {
     setLoading(true); setError(null)
@@ -47,6 +134,91 @@ export default function AlumniVerificationAdmin() {
   }, [])
 
   React.useEffect(() => { load() }, [load])
+
+  const handleCsvUpload: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setError(null)
+    setCsvMessage(null)
+    setCsvProcessing(true)
+
+    try {
+      const text = await file.text()
+      const parsed = parseVerificationCsv(text)
+
+      if (!parsed.length) {
+        setError('CSV is empty or missing required columns (First Name, Last Name, Year Graduated).')
+        return
+      }
+
+      const map = new Map<string, Row>()
+      rows.forEach(r => {
+        if (!r.first_name || !r.last_name || !r.graduation_year) return
+        const nameKey = normalizeNameParts(`${r.first_name} ${r.last_name}`)
+        const key = `${nameKey}|${r.graduation_year}`
+        map.set(key, r)
+      })
+
+      const toVerify: Row[] = []
+      let alreadyVerified = 0
+
+      parsed.forEach(rec => {
+        const csvNameKey = normalizeNameParts(rec.fullName)
+        const key = `${csvNameKey}|${rec.year}`
+        const row = map.get(key)
+        if (!row) return
+        if (row.is_verified) {
+          alreadyVerified++
+          return
+        }
+        toVerify.push(row)
+      })
+
+      if (toVerify.length === 0) {
+        setCsvMessage(`No matching pending alumni found to verify. Already verified: ${alreadyVerified}.`)
+        return
+      }
+
+      const { data: userRes, error: userErr } = await supabase.auth.getUser()
+      if (userErr) throw userErr
+      const adminId = userRes.user?.id || null
+
+      const nowIso = new Date().toISOString()
+      const payload: Partial<Row> = {
+        is_verified: true,
+        verified_at: nowIso,
+        verified_by: adminId,
+      }
+
+      const ids = toVerify.map(r => r.id)
+
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update(payload)
+        .in('id', ids)
+      if (updErr) throw updErr
+
+      await logActivity(
+        supabase,
+        'Bulk Verify Alumni (CSV)',
+        `verified_count=${ids.length}; already_verified=${alreadyVerified}; file_name=${file.name}`
+      )
+
+      setRows(prev => prev.map(r => (
+        ids.includes(r.id)
+          ? { ...r, ...payload }
+          : r
+      )))
+
+      setCsvMessage(`Successfully verified ${ids.length} alumni from CSV. Already verified: ${alreadyVerified}.`)
+    } catch (e: any) {
+      setError(e?.message || 'Failed to process CSV for verification.')
+    } finally {
+      setCsvProcessing(false)
+      event.target.value = ''
+    }
+  }
 
   const toggleVerify = async (r: Row) => {
     const nextVerified = !r.is_verified
@@ -107,6 +279,24 @@ export default function AlumniVerificationAdmin() {
               onChange={e => setSearch(e.target.value)}
               sx={{ minWidth: 280 }}
             />
+            <Tooltip title="Upload official alumni list from Registrar/Alumni Office (CSV)">
+              <span>
+                <Button
+                  component="label"
+                  size="small"
+                  className="gradient-btn-pink"
+                  disabled={loading || csvProcessing}
+                >
+                  {csvProcessing ? 'Processing CSV…' : 'Upload Official Alumni List'}
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    hidden
+                    onChange={handleCsvUpload}
+                  />
+                </Button>
+              </span>
+            </Tooltip>
             <Tooltip title="Reload">
               <IconButton onClick={load} disabled={loading}>
                 <RefreshIcon />
@@ -116,6 +306,9 @@ export default function AlumniVerificationAdmin() {
         </Stack>
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {csvMessage && !error && (
+          <Alert severity="success" sx={{ mb: 2 }}>{csvMessage}</Alert>
+        )}
         {loading && <LinearProgress sx={{ mb: 1 }} />}
 
         <TableContainer sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
