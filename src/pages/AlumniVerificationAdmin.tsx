@@ -117,6 +117,8 @@ export default function AlumniVerificationAdmin() {
   const [savingId, setSavingId] = React.useState<string | null>(null)
   const [csvProcessing, setCsvProcessing] = React.useState(false)
   const [csvMessage, setCsvMessage] = React.useState<string | null>(null)
+  const [lastCsvVerifiedIds, setLastCsvVerifiedIds] = React.useState<string[] | null>(null)
+  const [undoProcessing, setUndoProcessing] = React.useState(false)
 
   const load = React.useCallback(async () => {
     setLoading(true); setError(null)
@@ -134,6 +136,47 @@ export default function AlumniVerificationAdmin() {
   }, [])
 
   React.useEffect(() => { load() }, [load])
+
+  const handleUndoCsvVerification = async () => {
+    if (!lastCsvVerifiedIds || lastCsvVerifiedIds.length === 0) return
+
+    setError(null)
+    setCsvMessage(null)
+    setUndoProcessing(true)
+
+    try {
+      const payload: Partial<Row> = {
+        is_verified: false,
+        verified_at: null,
+        verified_by: null,
+      }
+
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update(payload)
+        .in('id', lastCsvVerifiedIds)
+      if (updErr) throw updErr
+
+      await logActivity(
+        supabase,
+        'Undo Bulk Verify Alumni (CSV)',
+        `reverted_count=${lastCsvVerifiedIds.length}`
+      )
+
+      setRows(prev => prev.map(r => (
+        lastCsvVerifiedIds.includes(r.id)
+          ? { ...r, ...payload }
+          : r
+      )))
+
+      setCsvMessage(`Reverted verification for ${lastCsvVerifiedIds.length} alumni from last CSV upload.`)
+      setLastCsvVerifiedIds(null)
+    } catch (e: any) {
+      setError(e?.message || 'Failed to undo CSV verification.')
+    } finally {
+      setUndoProcessing(false)
+    }
+  }
 
   const handleCsvUpload: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
     const file = event.target.files?.[0]
@@ -212,6 +255,7 @@ export default function AlumniVerificationAdmin() {
       )))
 
       setCsvMessage(`Successfully verified ${ids.length} alumni from CSV. Already verified: ${alreadyVerified}.`)
+      setLastCsvVerifiedIds(ids)
     } catch (e: any) {
       setError(e?.message || 'Failed to process CSV for verification.')
     } finally {
@@ -279,6 +323,19 @@ export default function AlumniVerificationAdmin() {
               onChange={e => setSearch(e.target.value)}
               sx={{ minWidth: 280 }}
             />
+            <Tooltip title="Undo verifications from the last CSV upload (this session)">
+              <span>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  onClick={handleUndoCsvVerification}
+                  disabled={loading || undoProcessing || !lastCsvVerifiedIds || !lastCsvVerifiedIds.length}
+                >
+                  {undoProcessing ? 'Undoing…' : 'Undo Last CSV Verify'}
+                </Button>
+              </span>
+            </Tooltip>
             <Tooltip title="Upload official alumni list from Registrar/Alumni Office (CSV)">
               <span>
                 <Button
