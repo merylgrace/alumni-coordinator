@@ -17,6 +17,7 @@ type Row = {
   is_verified: boolean | null
   verified_at: string | null
   verified_by: string | null
+  role?: 'alumni' | 'admin' | 'not_alumni' | null
 }
 
 type CsvAlumniRecord = {
@@ -125,7 +126,7 @@ export default function AlumniVerificationAdmin() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id,first_name,last_name,course,graduation_year,is_verified,verified_at,verified_by')
+        .select('id,first_name,last_name,course,graduation_year,is_verified,verified_at,verified_by,role')
         .order('last_name', { ascending: true })
         .limit(1000)
       if (error) throw error
@@ -269,7 +270,13 @@ export default function AlumniVerificationAdmin() {
     setSavingId(r.id)
     // optimistic UI
     setRows(prev => prev.map(x => x.id === r.id
-      ? { ...x, is_verified: nextVerified, verified_at: nextVerified ? new Date().toISOString() : null }
+      ? {
+        ...x,
+        is_verified: nextVerified,
+        verified_at: nextVerified ? new Date().toISOString() : null,
+        // If verifying someone previously marked as not_alumni, restore alumni role
+        role: nextVerified ? (x.role === 'not_alumni' ? 'alumni' : x.role ?? 'alumni') : x.role,
+      }
       : x
     ))
     try {
@@ -278,7 +285,8 @@ export default function AlumniVerificationAdmin() {
       const payload: Partial<Row> = {
         is_verified: nextVerified,
         verified_at: nextVerified ? new Date().toISOString() : null,
-        verified_by: nextVerified ? adminId : null
+        verified_by: nextVerified ? adminId : null,
+        role: nextVerified ? (r.role === 'not_alumni' ? 'alumni' : r.role ?? 'alumni') : r.role,
       }
       const { error } = await supabase.from('profiles').update(payload).eq('id', r.id)
       if (error) throw error
@@ -297,11 +305,97 @@ export default function AlumniVerificationAdmin() {
     }
   }
 
+  const markNotAlumni = async (r: Row) => {
+    if (savingId) return
+    setSavingId(r.id)
+    setError(null)
+
+    const updated: Row = {
+      ...r,
+      is_verified: false,
+      verified_at: null,
+      verified_by: null,
+      role: 'not_alumni',
+    }
+
+    // optimistic UI
+    setRows(prev => prev.map(x => x.id === r.id ? updated : x))
+
+    try {
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({
+          is_verified: false,
+          verified_at: null,
+          verified_by: null,
+          role: 'not_alumni',
+        })
+        .eq('id', r.id)
+      if (updErr) throw updErr
+
+      await logActivity(
+        supabase,
+        'Mark Not Alumni',
+        'Thank you for registering. However, this platform is intended only for alumni of NBSC (formerly NBCC).',
+        r.id
+      )
+    } catch (e: any) {
+      setError(e?.message || 'Failed to mark as Not Alumni')
+      // revert optimistic update
+      setRows(prev => prev.map(x => x.id === r.id ? r : x))
+    } finally {
+      setSavingId(null)
+    }
+  }
+
+  const revertNotAlumni = async (r: Row) => {
+    if (savingId) return
+    setSavingId(r.id)
+    setError(null)
+
+    const updated: Row = {
+      ...r,
+      is_verified: false,
+      verified_at: null,
+      verified_by: null,
+      role: 'alumni',
+    }
+
+    // optimistic UI
+    setRows(prev => prev.map(x => x.id === r.id ? updated : x))
+
+    try {
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({
+          is_verified: false,
+          verified_at: null,
+          verified_by: null,
+          role: 'alumni',
+        })
+        .eq('id', r.id)
+      if (updErr) throw updErr
+
+      await logActivity(
+        supabase,
+        'Revert Not Alumni',
+        `alumni_id=${r.id}; name=${(r.last_name || '')}, ${(r.first_name || '')}`,
+        r.id
+      )
+    } catch (e: any) {
+      setError(e?.message || 'Failed to revert Not Alumni status')
+      // revert optimistic update
+      setRows(prev => prev.map(x => x.id === r.id ? r : x))
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   const filtered = rows.filter(r => {
     const q = search.trim().toLowerCase()
     if (!q) return true
     const name = `${r.first_name || ''} ${r.last_name || ''}`.toLowerCase()
-    const status = r.is_verified ? 'verified' : 'pending'
+    const status = r.role === 'not_alumni' ? 'not alumni' : (r.is_verified ? 'verified' : 'pending')
     return (
       name.includes(q) ||
       (r.course || '').toLowerCase().includes(q) ||
@@ -384,26 +478,40 @@ export default function AlumniVerificationAdmin() {
               {filtered.map(r => {
                 const name = `${r.last_name || ''}, ${r.first_name || ''}`.trim().replace(/^,|,$/g, '')
                 const isVerified = !!r.is_verified
+                const isNotAlumni = r.role === 'not_alumni'
                 return (
                   <TableRow key={r.id} hover>
                     <TableCell>{name || '—'}</TableCell>
                     <TableCell>{r.course || '—'}</TableCell>
                     <TableCell>{r.graduation_year ?? '—'}</TableCell>
                     <TableCell>
-                      {isVerified
-                        ? <Chip size="small" color="success" label="Verified" />
-                        : <Chip size="small" color="warning" label="Pending" />}
+                      {isNotAlumni
+                        ? <Chip size="small" color="error" label="Not Alumni" />
+                        : isVerified
+                          ? <Chip size="small" color="success" label="Verified" />
+                          : <Chip size="small" color="warning" label="Pending" />}
                     </TableCell>
                     <TableCell>{fmtDate(r.verified_at)}</TableCell>
                     <TableCell align="right">
-                      <Button
-                        size="small"
-                        className={isVerified ? 'gradient-btn-blue' : 'gradient-btn-pink'}
-                        onClick={() => toggleVerify(r)}
-                        disabled={savingId === r.id}
-                      >
-                        {isVerified ? 'Mark Pending' : 'Mark Verified'}
-                      </Button>
+                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        <Button
+                          size="small"
+                          className={isNotAlumni ? 'gradient-btn-blue' : (isVerified ? 'gradient-btn-blue' : 'gradient-btn-pink')}
+                          onClick={() => (isNotAlumni ? revertNotAlumni(r) : toggleVerify(r))}
+                          disabled={savingId === r.id}
+                        >
+                          {isNotAlumni ? 'Revert' : (isVerified ? 'Mark Pending' : 'Mark Verified')}
+                        </Button>
+                        <Button
+                          size="small"
+                          color="error"
+                          variant={isNotAlumni ? 'contained' : 'outlined'}
+                          onClick={() => markNotAlumni(r)}
+                          disabled={savingId === r.id || isNotAlumni}
+                        >
+                          {isNotAlumni ? 'Not Alumni' : 'Mark Not Alumni'}
+                        </Button>
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 )
