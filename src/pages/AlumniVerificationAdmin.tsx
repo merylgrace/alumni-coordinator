@@ -339,6 +339,21 @@ export default function AlumniVerificationAdmin() {
         'Thank you for registering. However, this platform is intended only for alumni of NBSC (formerly NBCC).',
         r.id
       )
+      // send a message/notice to the user account informing them about deletion request
+      try {
+        const messageBody = 'Thank you for taking your time registering but we only cater the alumni of NBSC (former NBCC). Please proceed to request account deletion now.'
+        // Insert into a `messages` table (schema: recipient_id, subject, body, created_at, read)
+        const { error: msgErr } = await supabase.from('messages').insert([
+          {
+            recipient_id: r.id,
+            subject: 'Account status: Not Alumni',
+            body: messageBody,
+          },
+        ])
+        if (msgErr) console.warn('Failed to insert message for user', r.id, msgErr.message)
+      } catch (e: any) {
+        console.warn('Error sending message to user', r.id, e?.message || e)
+      }
     } catch (e: any) {
       setError(e?.message || 'Failed to mark as Not Alumni')
       // revert optimistic update
